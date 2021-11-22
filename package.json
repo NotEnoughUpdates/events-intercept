@@ -12,7 +12,7 @@
 		"build": "yarn rimraf dist && yarn tsc",
 		"build:no-emit": "yarn tsc --noEmit",
 		"prepare": "yarn build",
-		"prepublishOnly": "yarn lint && yarn build:no-emit"
+		"prepublishOnly": "yarn build:no-emit"
 	},
 	"repository": {
 		"type": "git",
@@ -60,5 +60,13 @@
 				}
 			}
 		]
-	}
+	},
+  "files": [
+    "src/",
+    "dist/",
+    "README.md",
+    "LICENSE",
+    "tsconfig.json",
+    "yarn.lock"
+  ]
 }
