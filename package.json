@@ -1,40 +1,64 @@
 {
-  "name": "events-intercept",
-  "version": "2.0.0",
-  "description": "event interceptors - like middleware for EventEmitter",
-  "main": "lib/events-intercept.js",
-  "scripts": {
-    "test": "mocha test",
-    "posttest": "istanbul cover _mocha -- -R spec",
-    "coveralls": "istanbul cover _mocha --report lcovonly -- -R spec && cat ./coverage/lcov.info | coveralls && rm -rf ./coverage"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/brandonhorst/events-intercept.git"
-  },
-  "keywords": [
-    "event",
-    "events",
-    "emit",
-    "intercept",
-    "tap",
-    "hook",
-    "report",
-    "mutate",
-    "EventEmitter"
-  ],
-  "author": "@brandonhorst",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/brandonhorst/events-intercept/issues"
-  },
-  "homepage": "https://github.com/brandonhorst/events-intercept",
-  "devDependencies": {
-    "chai": "^1.10.0",
-    "coveralls": "^2.11.2",
-    "istanbul": "^0.3.5",
-    "mocha": "^2.1.0",
-    "sinon": "^1.12.2",
-    "sinon-chai": "^2.6.0"
-  }
+	"name": "@notenoughupdates/events-intercept",
+	"version": "3.0.0",
+	"description": "event interceptors - like middleware for EventEmitter",
+	"main": "./dist/events-intercept.js",
+	"types": "./dist/events-intercept.d.ts",
+	"scripts": {
+		"test": "mocha test",
+		"posttest": "istanbul cover _mocha -- -R spec",
+		"coveralls": "istanbul cover _mocha --report lcovonly -- -R spec && cat ./coverage/lcov.info | coveralls && rm -rf ./coverage",
+		"format": "yarn prettier . --write",
+		"build": "yarn rimraf dist && yarn tsc",
+		"build:no-emit": "yarn tsc --noEmit",
+		"prepare": "yarn build",
+		"prepublishOnly": "yarn lint && yarn build:no-emit"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/brandonhorst/events-intercept.git"
+	},
+	"keywords": [
+		"event",
+		"events",
+		"emit",
+		"intercept",
+		"tap",
+		"hook",
+		"report",
+		"mutate",
+		"EventEmitter"
+	],
+	"author": "@brandonhorst",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/brandonhorst/events-intercept/issues"
+	},
+	"homepage": "https://github.com/brandonhorst/events-intercept",
+	"devDependencies": {
+		"@types/node": "^16.11.9",
+		"chai": "^1.10.0",
+		"coveralls": "^2.11.2",
+		"istanbul": "^0.3.5",
+		"mocha": "^2.1.0",
+		"prettier": "^2.4.1",
+		"rimraf": "^3.0.2",
+		"sinon": "^1.12.2",
+		"sinon-chai": "^2.6.0",
+		"typescript": "^4.5.2"
+	},
+	"prettier": {
+		"useTabs": true,
+		"trailingComma": "none",
+		"arrowParens": "always",
+		"printWidth": 120,
+		"overrides": [
+			{
+				"files": "README.md",
+				"options": {
+					"useTabs": false
+				}
+			}
+		]
+	}
 }
