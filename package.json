@@ -1,6 +1,6 @@
 {
 	"name": "@notenoughupdates/events-intercept",
-	"version": "3.0.0",
+	"version": "3.0.1",
 	"description": "event interceptors - like middleware for EventEmitter",
 	"main": "./dist/events-intercept.js",
 	"types": "./dist/events-intercept.d.ts",

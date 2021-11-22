@@ -189,7 +189,7 @@ export function monkeyPatch<C extends events.EventEmitter>(emitter: C): C & Patc
 
 export const patch = monkeyPatch;
 
-interface PatchedElements {
+export interface PatchedElements {
 	intercept: typeof intercept;
 	interceptors: typeof interceptors;
 	removeInterceptor: typeof removeInterceptor;
