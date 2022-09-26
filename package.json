@@ -1,23 +1,19 @@
 {
-	"name": "@notenoughupdates/events-intercept",
-	"version": "3.0.1",
+	"name": "@tanzanite/events-intercept",
+	"version": "3.1.0",
 	"description": "event interceptors - like middleware for EventEmitter",
-	"main": "./dist/events-intercept.js",
-	"types": "./dist/events-intercept.d.ts",
+	"main": "./dist/src/events-intercept.js",
+	"types": "./dist/src/events-intercept.d.ts",
+	"type": "module",
 	"scripts": {
-		"test": "mocha test",
-		"posttest": "istanbul cover _mocha -- -R spec",
-		"coveralls": "istanbul cover _mocha --report lcovonly -- -R spec && cat ./coverage/lcov.info | coveralls && rm -rf ./coverage",
+		"test": "node --enable-source-maps --test ./dist/test/ | yarn tap-color",
 		"format": "yarn prettier . --write",
-		"build": "yarn rimraf dist && yarn tsc",
+		"build": "rm -r dist && yarn tsc",
 		"build:no-emit": "yarn tsc --noEmit",
 		"prepare": "yarn build",
 		"prepublishOnly": "yarn build:no-emit"
 	},
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/brandonhorst/events-intercept.git"
-	},
+	"repository": "https://github.com/TanzaniteBot/events-intercept.git",
 	"keywords": [
 		"event",
 		"events",
@@ -29,44 +25,18 @@
 		"mutate",
 		"EventEmitter"
 	],
-	"author": "@brandonhorst",
+	"author": "brandonhorst",
 	"license": "MIT",
-	"bugs": {
-		"url": "https://github.com/brandonhorst/events-intercept/issues"
-	},
-	"homepage": "https://github.com/brandonhorst/events-intercept",
+	"bugs": "https://github.com/TanzaniteBot/events-intercept/issues",
+	"homepage": "https://github.com/TanzaniteBot/events-intercept",
 	"devDependencies": {
-		"@types/node": "^16.11.9",
-		"chai": "^1.10.0",
-		"coveralls": "^2.11.2",
-		"istanbul": "^0.3.5",
-		"mocha": "^2.1.0",
-		"prettier": "^2.4.1",
-		"rimraf": "^3.0.2",
-		"sinon": "^1.12.2",
-		"sinon-chai": "^2.6.0",
-		"typescript": "^4.5.2"
+		"@types/node": "^18.7.21",
+		"prettier": "^2.7.1",
+		"tap-color": "^1.2.0",
+		"typescript": "^4.8.3"
 	},
-	"prettier": {
-		"useTabs": true,
-		"trailingComma": "none",
-		"arrowParens": "always",
-		"printWidth": 120,
-		"overrides": [
-			{
-				"files": "README.md",
-				"options": {
-					"useTabs": false
-				}
-			}
-		]
-	},
-  "files": [
-    "src/",
-    "dist/",
-    "README.md",
-    "LICENSE",
-    "tsconfig.json",
-    "yarn.lock"
-  ]
+	"files": [
+		"src/",
+		"dist/src"
+	]
 }

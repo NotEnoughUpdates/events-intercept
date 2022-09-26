@@ -1,7 +1,7 @@
-const chai = require("chai"),
-	assert = chai.assert.equal,
-	eventsIntercept = require("../dist/events-intercept"),
-	events = require("events");
+import assert from "node:assert/strict";
+import events from "node:events";
+import { describe, it } from "node:test";
+import * as eventsIntercept from "../src/events-intercept.js";
 
 describe("patched event emitters", () => {
 	describe("with no intercepts", () => {
@@ -11,7 +11,7 @@ describe("patched event emitters", () => {
 
 			ee.on("foo", () => {});
 
-			assert(ee.emit("foo"), true, "emit('foo') is true");
+			assert.equal(ee.emit("foo"), true, "emit('foo') isn't true");
 		});
 
 		it("returns false if an event had no handlers", () => {
@@ -19,14 +19,13 @@ describe("patched event emitters", () => {
 			eventsIntercept.patch(ee);
 			ee.on("foo", () => {});
 
-			assert(ee.emit("bar"), false, "emit('bar') is false");
+			assert.equal(ee.emit("bar"), false, "emit('bar') isn't false");
 		});
 	});
 
 	describe("with the event intercepted", () => {
 		it("returns true if an event had handlers", () => {
-			const ee = new events.EventEmitter();
-			eventsIntercept.patch(ee);
+			const ee = eventsIntercept.patch(new events.EventEmitter());
 
 			let intercepted = false;
 			let handled = false;
@@ -34,19 +33,19 @@ describe("patched event emitters", () => {
 			ee.on("foo", () => {
 				handled = true;
 			});
+
 			ee.intercept("foo", (next) => {
 				intercepted = true;
 				return next();
 			});
 
-			assert(ee.emit("foo"), true, "emit('foo') returns true");
-			assert(intercepted, true, "interceptor was invoked");
-			assert(handled, true, "handler was invoked");
+			assert.equal(ee.emit("foo"), true, "emit('foo') doesn't return true");
+			assert.equal(intercepted, true, "interceptor wasn't invoked");
+			assert.equal(handled, true, "handler wasn't invoked");
 		});
 
 		it("returns false if an event had no handlers", () => {
-			const ee = new events.EventEmitter();
-			eventsIntercept.patch(ee);
+			const ee = eventsIntercept.patch(new events.EventEmitter());
 
 			let intercepted = false;
 
@@ -55,8 +54,8 @@ describe("patched event emitters", () => {
 				return next();
 			});
 
-			assert(ee.emit("bar"), false, "emit('bar') returns false");
-			assert(intercepted, true, "interceptor was called");
+			assert.equal(ee.emit("bar"), false, "emit('bar') doesn't return false");
+			assert.equal(intercepted, true, "interceptor wasn't called");
 		});
 	});
 });
@@ -66,7 +65,7 @@ describe("events-intercept event emitters", () => {
 		const ee = new eventsIntercept.EventEmitter();
 		ee.on("foo", () => {});
 
-		assert(ee.emit("foo"), true, "emit('foo') is true");
+		assert.equal(ee.emit("foo"), true, "emit('foo') isn't true");
 	});
 
 	it("returns false if an event had no handlers", () => {
@@ -74,7 +73,7 @@ describe("events-intercept event emitters", () => {
 		eventsIntercept.patch(ee);
 		ee.on("foo", () => {});
 
-		assert(ee.emit("bar"), false, "emit('bar') is false");
+		assert.equal(ee.emit("bar"), false, "emit('bar') isn't false");
 	});
 
 	describe("with the event intercepted", () => {
@@ -92,9 +91,9 @@ describe("events-intercept event emitters", () => {
 				return next();
 			});
 
-			assert(ee.emit("foo"), true, "emit('foo') returns true");
-			assert(intercepted, true, "interceptor was invoked");
-			assert(handled, true, "handler was invoked");
+			assert.equal(ee.emit("foo"), true, "emit('foo') doesn't return true");
+			assert.equal(intercepted, true, "interceptor wasn't invoked");
+			assert.equal(handled, true, "handler wasn't invoked");
 		});
 	});
 });

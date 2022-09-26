@@ -1,4 +1,4 @@
-# `events-intercept`
+# `@tanzanite/events-intercept`
 
 [![Build Status](https://travis-ci.org/brandonhorst/events-intercept.svg?branch=master)](https://travis-ci.org/brandonhorst/events-intercept)
 [![Coverage Status](https://coveralls.io/repos/brandonhorst/events-intercept/badge.png?branch=master)](https://coveralls.io/r/brandonhorst/events-intercept?branch=master)
@@ -8,15 +8,15 @@ The node [EventEmitter](http://nodejs.org/api/events.html) is very powerful. How
 ## Installation
 
 ```sh
-npm install events-intercept
+yarn add @tanzanite/events-intercept
 ```
 
 ## Standalone Usage
 
-The module contains a constructor, `EventEmitter`, which inherits from the standard node `events.EventEmitter`.
+The module contains a class, `EventEmitter`, which extends the standard `node:events` `EventEmitter`.
 
 ```ts
-import { EventEmitter } from "events-intercept";
+import { EventEmitter } from "@tanzanite/events-intercept";
 const emitter = new EventEmitter();
 ```
 
@@ -54,7 +54,7 @@ If multiple interceptors are added to a single event, they will be called in the
 Here's that sample code all together. Of course, `intercept` supports proper function chaining.
 
 ```ts
-import eventsIntercept from "events-intercept";
+import eventsIntercept from "@tanzanite/events-intercept";
 const emitter = new eventsIntercept.EventEmitter();
 
 emitter
@@ -91,7 +91,7 @@ emitter.intercept("data", (done) => {
 
 ## Utilities
 
-`events-intercept` supports all of the useful utilities that the standard `EventEmitter` supports:
+`@tanzanite/events-intercept` supports all of the useful utilities that the standard `EventEmitter` supports:
 
 - `interceptors(type)` returns an array of all interceptors (functions) for the given type.
 - `removeInterceptor(type, interceptor)` removes an interceptor of a given type. You must pass in the interceptor function.
@@ -103,11 +103,12 @@ All of these are demonstrated in the tests.
 
 ## Patching
 
-Of course, many EventEmitters that you have the pleasure of using will not have the foresight to use `event-intercept`. Thankfully, Javascript is awesome, it's possible to monkey patch the interception capabilities onto an existing object. Just call
+Of course, many EventEmitters that you have the pleasure of using will not have the foresight to use `@tanzanite/events-intercept`.
+Thankfully, Javascript is awesome, it's possible to monkey patch the interception capabilities onto an existing object. Just call
 
 ```ts
-import events from "events";
-import eventsIntercept from "events-intercept";
+import events from "node:events";
+import eventsIntercept from "@tanzanite/events-intercept";
 
 const emitter = new events.EventEmitter();
 

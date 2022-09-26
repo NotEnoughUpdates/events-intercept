@@ -1,202 +1,222 @@
-import events from "events";
+import { EventEmitter } from "node:events";
 
-function intercept<C extends EventInterceptorResolvable>(
-	this: C,
-	type: string | number,
-	interceptor: (...args: any[]) => any
-): C {
-	if (typeof interceptor !== "function") throw new TypeError("interceptor must be a function");
+/* HACK: methods are overloaded to remove the "symbol" type from the "eventName" 
+parameter so that typescript doesn't complain when using a symbol to index an 
+object. This doesn't affect the call signature of the method */
 
-	this.emit("newInterceptor", type, interceptor);
+export class EventInterceptor extends EventEmitter {
+	public static defaultMaxInterceptors = 10;
 
-	if (!this._interceptors![type]) this._interceptors![type] = [interceptor];
-	else this._interceptors![type].push(interceptor);
+	private _maxInterceptors = EventInterceptor.defaultMaxInterceptors;
+	private _interceptors: Record<string, Interceptors> = {};
 
-	let m: number;
-
-	// Check for listener leak
-	if (!this._interceptors![type].warned) {
-		m = typeof this._maxInterceptors !== "undefined" ? this._maxInterceptors : EventInterceptor.defaultMaxInterceptors;
-
-		if (m > 0 && this._interceptors![type].length > m) {
-			this._interceptors![type].warned = true;
-			process.emitWarning(
-				`possible events-intercept EventEmitter memory leak detected. ${
-					this._interceptors![type].length
-				} interceptors added. Use emitter.setMaxInterceptors(n) to increase limit.`
-			);
-		}
+	public constructor() {
+		super();
+		fixListeners(this);
 	}
 
-	return this;
-}
+	public override emit(eventName: string | symbol, ...args: any[]): boolean;
+	public override emit(eventName: string, ...args: any[]): boolean {
+		let completed: number;
 
-function emitFactory(superCall: typeof events.EventEmitter.prototype.emit) {
-	return function (this: EventInterceptor, type: string | symbol, ...args: any[]) {
-		let completed: number, interceptor: any[];
-
-		const next = (err: Error | any, ...args1: any[]) => {
+		const next = (err: Error | any, ...args1: any[]): boolean => {
 			if (err) {
 				this.emit("error", err);
+				return false; // @tanzanite/events-intercept
 			} else if (completed === interceptor.length) {
-				return superCall.call(this, type, ...args1);
+				return super.emit(eventName, ...args1);
 			} else {
 				completed += 1;
 				return interceptor[completed - 1].call(this, ...args1, next);
 			}
 		};
 
-		this._interceptors ??= {};
-
-		interceptor = this._interceptors[type.toString()];
+		const interceptor = this._interceptors[eventName.toString()];
 
 		if (!interceptor) {
 			//Just pass through
-			return superCall.call(this, type, ...args);
+			return super.emit(eventName, ...args);
 		} else {
 			completed = 0;
 			return next.call(this, null, ...args);
 		}
-	};
-}
-
-function interceptors(this: EventInterceptor, type: string) {
-	return !this._interceptors || !this._interceptors[type] ? [] : this._interceptors[type].slice();
-}
-
-function removeInterceptor(this: EventInterceptor, type: string, interceptor: any) {
-	if (typeof interceptor !== "function") {
-		throw new TypeError("interceptor must be a function");
 	}
 
-	if (!this._interceptors || !this._interceptors[type]) return this;
-
-	const list = this._interceptors[type];
-	const length = list.length;
-	let position = -1;
-
-	for (let i = length - 1; i >= 0; i--) {
-		if (list[i] === interceptor) {
-			position = i;
-			break;
-		}
-	}
-
-	if (position < 0) return this;
-
-	if (length === 1) delete this._interceptors[type];
-	else list.splice(position, 1);
-
-	this.emit("removeInterceptor", type, interceptor);
-
-	return this;
-}
-
-function listenersFactory(superCall: typeof events.EventEmitter.prototype.listeners) {
-	return function (this: EventInterceptor, type: string) {
-		const superListeners = superCall.call(this, type);
-		let fakeFunctionIndex;
+	public override listeners(eventName: string | symbol): Function[] {
+		const superListeners = super.listeners(eventName);
 		const tempSuperListeners = superListeners.slice();
-		if (type === "newListener" || type === "removeListener") {
-			fakeFunctionIndex = superListeners.indexOf(fakeFunction);
+		if (eventName === "newListener" || eventName === "removeListener") {
+			const fakeFunctionIndex = superListeners.indexOf(fakeFunction);
 			if (fakeFunctionIndex !== -1) {
 				tempSuperListeners.splice(fakeFunctionIndex, 1);
 			}
 			return tempSuperListeners;
 		}
 		return superListeners;
-	};
+	}
+
+	public intercept(eventName: string | symbol, interceptor: Interceptor): this;
+	public intercept(eventName: string, interceptor: Interceptor): this {
+		if (typeof interceptor !== "function") {
+			throw new TypeError("interceptor must be a function");
+		}
+
+		this.emit("newInterceptor", eventName, interceptor);
+
+		if (!this._interceptors[eventName]) {
+			this._interceptors[eventName] = [interceptor];
+		} else {
+			this._interceptors[eventName].push(interceptor);
+		}
+
+		// Check for listener leak
+		if (!this._interceptors[eventName].warned) {
+			const m = this._maxInterceptors;
+
+			if (m > 0 && this._interceptors[eventName].length > m) {
+				this._interceptors[eventName].warned = true;
+				process.emitWarning(
+					`possible @tanzanite/events-intercept EventEmitter memory leak detected. ${this._interceptors[eventName].length} interceptors added. Use emitter.setMaxInterceptors(...) to increase limit.`
+				);
+			}
+		}
+
+		return this;
+	}
+
+	public interceptors(eventName: string | symbol): Interceptors;
+	public interceptors(eventName: string): Interceptors {
+		return !this._interceptors || !this._interceptors[eventName]
+			? []
+			: this._interceptors[eventName as string].slice();
+	}
+
+	public removeInterceptor(
+		eventName: string | symbol,
+		interceptor: Interceptor
+	): this;
+	public removeInterceptor(eventName: string, interceptor: Interceptor): this {
+		if (typeof interceptor !== "function") {
+			throw new TypeError("interceptor must be a function");
+		}
+
+		if (!this._interceptors || !this._interceptors[eventName]) return this;
+
+		const list = this._interceptors[eventName];
+		const length = list.length;
+		let position = -1;
+
+		for (let i = length - 1; i >= 0; i--) {
+			if (list[i] === interceptor) {
+				position = i;
+				break;
+			}
+		}
+
+		if (position < 0) return this;
+
+		if (length === 1) {
+			delete this._interceptors[eventName];
+		} else {
+			list.splice(position, 1);
+		}
+
+		this.emit("removeInterceptor", eventName, interceptor);
+
+		return this;
+	}
+
+	public removeAllInterceptors(eventName?: string | symbol): this;
+	public removeAllInterceptors(eventName?: string): this {
+		if (
+			!this._interceptors ||
+			Object.getOwnPropertyNames(this._interceptors).length === 0
+		) {
+			return this;
+		}
+
+		if (eventName === undefined) {
+			for (const key in this._interceptors) {
+				if (
+					this._interceptors.hasOwnProperty(key) &&
+					key !== "removeInterceptor"
+				) {
+					this.removeAllInterceptors(key);
+				}
+			}
+			this.removeAllInterceptors("removeInterceptor");
+			this._interceptors = {};
+		} else if (this._interceptors[eventName]) {
+			const theseInterceptors = this._interceptors[eventName];
+			const { length } = theseInterceptors;
+
+			// LIFO order
+			for (let i = length - 1; i >= 0; i--) {
+				this.removeInterceptor(eventName, theseInterceptors[i]);
+			}
+
+			delete this._interceptors[eventName];
+		}
+
+		return this;
+	}
+
+	public setMaxInterceptors(n: number): this {
+		if (typeof n !== "number" || n < 0 || isNaN(n)) {
+			throw new TypeError("n must be a positive number");
+		}
+		this._maxInterceptors = n;
+		return this;
+	}
 }
 
 function fakeFunction() {}
 
-function fixListeners(emitter: EventInterceptorResolvable): void {
+function fixListeners(emitter: EventEmitter): void {
 	emitter.on("newListener", fakeFunction);
 	emitter.on("removeListener", fakeFunction);
 }
 
-function setMaxInterceptors(this: EventInterceptorResolvable, n: number) {
-	if (typeof n !== "number" || n < 0 || isNaN(n)) {
-		throw new TypeError("n must be a positive number");
-	}
-	this._maxInterceptors = n;
-	return this;
-}
-
-function removeAllInterceptors(this: EventInterceptorResolvable, type: string) {
-	let theseInterceptors, length;
-
-	if (!this._interceptors || Object.getOwnPropertyNames(this._interceptors).length === 0) {
-		return this;
+export function monkeyPatch<E extends EventEmitter>(
+	emitter: E
+): E & PatchedElements {
+	for (const prop of props) {
+		Object.defineProperty(
+			emitter,
+			prop,
+			Object.getOwnPropertyDescriptor(EventInterceptor.prototype, prop)!
+		);
 	}
 
-	if (arguments.length === 0) {
-		for (const key in this._interceptors) {
-			if (this._interceptors.hasOwnProperty(key) && key !== "removeInterceptor") {
-				this.removeAllInterceptors(key);
-			}
-		}
-		this.removeAllInterceptors("removeInterceptor");
-		this._interceptors = {};
-	} else if (this._interceptors[type.toString()]) {
-		theseInterceptors = this._interceptors[type.toString()];
-		length = theseInterceptors.length;
+	(emitter as any)._maxInterceptors ??= EventInterceptor.defaultMaxInterceptors;
+	(emitter as any)._interceptors ??= {};
 
-		// LIFO order
-		for (let i = length - 1; i >= 0; i--) {
-			this.removeInterceptor(type, theseInterceptors[i]);
-		}
-
-		delete this._interceptors[type.toString()];
-	}
-
-	return this;
+	fixListeners(emitter);
+	return emitter as E & PatchedElements;
 }
 
-export class EventInterceptor extends events.EventEmitter {
-	public override emit = emitFactory(super.emit);
-	public override listeners = listenersFactory(super.listeners);
-	public intercept = intercept;
-	public interceptors = interceptors;
-	public removeInterceptor = removeInterceptor;
-	public removeAllInterceptors = removeAllInterceptors;
-	public setMaxInterceptors = setMaxInterceptors;
-	declare _maxInterceptors: number | undefined;
-	declare _interceptors: Record<string, any> | undefined;
-	public static defaultMaxInterceptors = 10;
+const props = [
+	"emit",
+	"listeners",
+	"intercept",
+	"interceptors",
+	"removeInterceptor",
+	"removeAllInterceptors",
+	"setMaxInterceptors"
+] as const;
 
-	public constructor() {
-		super();
-		fixListeners(this);
-	}
+export type PatchedElements = Pick<EventInterceptor, typeof props[number]>;
+
+export type EventInterceptorResolvable =
+	| (EventEmitter & PatchedElements)
+	| EventInterceptor;
+
+export interface Interceptors extends Array<Interceptor> {
+	warned?: boolean;
 }
 
-export function monkeyPatch<C extends events.EventEmitter>(emitter: C): C & PatchedElements {
-	const emitter_ = emitter as C & PatchedElements;
-	const oldEmit = emitter_.emit;
-	const oldListeners = emitter_.listeners;
+export type Interceptor = (...args: any[]) => any;
 
-	emitter_.emit = emitFactory(oldEmit);
-	emitter_.intercept = intercept;
-	emitter_.interceptors = interceptors;
-	emitter_.removeInterceptor = removeInterceptor;
-	emitter_.removeAllInterceptors = removeAllInterceptors;
-	emitter_.setMaxInterceptors = setMaxInterceptors;
-	emitter_.listeners = listenersFactory(oldListeners);
-	fixListeners(emitter_);
-	return emitter_;
-}
-
-export const patch = monkeyPatch;
-
-export interface PatchedElements {
-	intercept: typeof intercept;
-	interceptors: typeof interceptors;
-	removeInterceptor: typeof removeInterceptor;
-	removeAllInterceptors: typeof removeAllInterceptors;
-	setMaxInterceptors: typeof setMaxInterceptors;
-	_maxInterceptors: number | undefined;
-	_interceptors: Record<string, any> | undefined;
-}
-
-export type EventInterceptorResolvable = (events.EventEmitter & PatchedElements) | EventInterceptor;
+// aliases
+export { EventInterceptor as EventEmitter };
+export { monkeyPatch as patch };

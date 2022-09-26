@@ -1,0 +1,7 @@
+{
+	"useTabs": true,
+	"trailingComma": "none",
+	"arrowParens": "always",
+	"printWidth": 80,
+	"overrides": [{ "files": "*.md", "options": { "useTabs": false } }]
+}
